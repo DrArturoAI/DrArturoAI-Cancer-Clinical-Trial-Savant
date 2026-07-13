@@ -1,0 +1,57 @@
+name: ClinicalTrials.gov diversity-equity language analysis
+
+on:
+  pull_request:
+    paths:
+      - "research/ctgov-dei/**"
+      - ".github/workflows/ctgov-dei-language-analysis.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install analysis dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install requests pandas numpy matplotlib statsmodels tabulate
+
+      - name: Run current-snapshot analysis
+        env:
+          CTGOV_REQUEST_INTERVAL: "1.25"
+        run: |
+          python research/ctgov-dei/ctgov_dei_analysis.py \
+            --outdir artifacts/ctgov_dei_analysis \
+            --start-year 2000
+
+      - name: Create reproducibility bundle
+        if: always()
+        run: |
+          mkdir -p artifacts
+          cp research/ctgov-dei/ctgov_dei_analysis.py artifacts/ctgov_dei_analysis/analysis_source.py || true
+          cd artifacts
+          zip -r ctgov_dei_analysis_bundle.zip ctgov_dei_analysis || true
+
+      - name: Upload analysis artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctgov-dei-analysis
+          path: |
+            artifacts/ctgov_dei_analysis/**
+            artifacts/ctgov_dei_analysis_bundle.zip
+          if-no-files-found: warn
+          retention-days: 30
