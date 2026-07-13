@@ -22,7 +22,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: pip
 
       - name: Install analysis dependencies
         run: |
@@ -40,7 +39,7 @@ jobs:
       - name: Create reproducibility bundle
         if: always()
         run: |
-          mkdir -p artifacts
+          mkdir -p artifacts/ctgov_dei_analysis
           cp research/ctgov-dei/ctgov_dei_analysis.py artifacts/ctgov_dei_analysis/analysis_source.py || true
           cd artifacts
           zip -r ctgov_dei_analysis_bundle.zip ctgov_dei_analysis || true
